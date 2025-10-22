@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>最適支払い計算機</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 15px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 15px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .money-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        @media (min-width: 480px) {
+            .money-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .money-item {
+                padding: 10px;
+            }
+
+            .money-item label {
+                font-size: 13px;
+            }
+
+            .money-item .denomination-badge {
+                font-size: 12px;
+                padding: 3px 8px;
+            }
+
+            .btn-control {
+                width: 36px;
+                height: 36px;
+                font-size: 20px;
+            }
+
+            .input-wrapper {
+                gap: 8px;
+            }
+        }
+
+        .money-item {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+            position: relative;
+            min-width: 0;
+        }
+
+        .money-item:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .money-item label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            font-size: 12px;
+            gap: 4px;
+        }
+
+        .money-item .denomination-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .money-item input {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 4px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 18px;
+            text-align: center;
+            font-weight: bold;
+            transition: border-color 0.3s;
+        }
+
+        .money-item input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn-control {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #667eea;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            flex-shrink: 0;
+            padding: 0;
+        }
+
+        .btn-control:active {
+            transform: scale(0.9);
+            background: #764ba2;
+        }
+
+        @media (hover: hover) {
+            .btn-control:hover {
+                background: #5568d3;
+                transform: scale(1.05);
+            }
+        }
+
+        .total-display {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+        }
+
+        .total-display .label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .total-display .amount {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .payment-input {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .payment-input label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 15px;
+        }
+
+        .payment-input input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 24px;
+            text-align: center;
+            font-weight: bold;
+            transition: border-color 0.3s;
+        }
+
+        .payment-input input::placeholder {
+            font-size: 16px;
+            font-weight: normal;
+        }
+
+        .payment-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        @media (hover: hover) {
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            }
+        }
+
+        .quick-add {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-add-btn {
+            flex: 1;
+            min-width: calc(33.333% - 6px);
+            padding: 10px 12px;
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .quick-add-btn:active {
+            background: #667eea;
+            color: white;
+            transform: scale(0.95);
+        }
+
+        @media (hover: hover) {
+            .quick-add-btn:hover {
+                background: #667eea;
+                color: white;
+            }
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 18px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .result-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .result-item h4 {
+            color: #495057;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .result-item .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .payment-details {
+            margin-top: 15px;
+        }
+
+        .payment-details h4 {
+            font-size: 15px;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .payment-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .payment-list-item {
+            background: white;
+            padding: 10px 8px;
+            border-radius: 6px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .payment-list-item .denomination {
+            font-size: 11px;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+
+        .payment-list-item .count {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .change-info {
+            background: #e7f3ff;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .change-info h4 {
+            font-size: 15px;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+
+        .change-info p {
+            margin: 8px 0;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .change-info strong {
+            color: #667eea;
+        }
+
+        @media (min-width: 600px) {
+            .result-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .payment-list {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .content {
+                padding: 25px;
+            }
+
+            .section {
+                margin-bottom: 30px;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .error {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            color: #856404;
+            margin-top: 15px;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            border-radius: 5px;
+            color: #155724;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 最適支払い計算機</h1>
+            <p>小銭を最小化する最適な支払い方法を提案します</p>
+        </div>
+
+        <div class="content">
+            <!-- 所持金入力セクション -->
+            <div class="section">
+                <h2 class="section-title">💵 現在の所持金</h2>
+                
+                <h3 style="font-size: 15px; color: #666; margin-bottom: 10px; margin-top: 0;">お札</h3>
+                <div class="money-grid">
+                    <div class="money-item">
+                        <label>
+                            <span>札</span>
+                            <span class="denomination-badge">¥10,000</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <button class="btn-control" onclick="adjustMoney('bill10000', -1)">−</button>
+                            <input type="number" id="bill10000" min="0" value="0">
+                            <button class="btn-control" onclick="adjustMoney('bill10000', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="money-item">
+                        <label>
+                            <span>札</span>
+                            <span class="denomination-badge">¥5,000</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <button class="btn-control" onclick="adjustMoney('bill5000', -1)">−</button>
+                            <input type="number" id="bill5000" min="0" value="0">
+                            <button class="btn-control" onclick="adjustMoney('bill5000', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="money-item">
+                        <label>
+                            <span>札</span>
+                            <span class="denomination-badge">¥1,000</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <button class="btn-control" onclick="adjustMoney('bill1000', -1)">−</button>
+                            <input type="number" id="bill1000" min="0" value="0">
+                            <button class="btn-control" onclick="adjustMoney('bill1000', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="font-size: 15px; color: #666; margin-bottom: 10px;">小銭</h3>
+                <div class="money-grid">
+                    <div class="money-item">
+                        <label>
+                            <span>玉</span>
+                            <span class="denomination-badge">¥500</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <button class="btn-control" onclick="adjustMoney('coin500', -1)">−</button>
+                            <input type="number" id="coin500" min="0" value="0">
+                            <button class="btn-control" onclick="adjustMoney('coin500', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="money-item">
+                        <label>
+                            <span>玉</span>
+                            <span class="denomination-badge">¥100</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <button class="btn-control" onclick="adjustMoney('coin100', -1)">−</button>
+                            <input type="number" id="coin100" min="0" value="0">
+                            <button class="btn-control" onclick="adjustMoney('coin100', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="money-item">
+                        <label>
+                            <span>玉</span>
+                            <span class="denomination-badge">¥50</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <button class="btn-control" onclick="adjustMoney('coin50', -1)">−</button>
+                            <input type="number" id="coin50" min="0" value="0">
+                            <button class="btn-control" onclick="adjustMoney('coin50', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="money-item">
+                        <label>
+                            <span>玉</span>
+                            <span class="denomination-badge">¥10</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <button class="btn-control" onclick="adjustMoney('coin10', -1)">−</button>
+                            <input type="number" id="coin10" min="0" value="0">
+                            <button class="btn-control" onclick="adjustMoney('coin10', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="money-item">
+                        <label>
+                            <span>玉</span>
+                            <span class="denomination-badge">¥5</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <button class="btn-control" onclick="adjustMoney('coin5', -1)">−</button>
+                            <input type="number" id="coin5" min="0" value="0">
+                            <button class="btn-control" onclick="adjustMoney('coin5', 1)">+</button>
+                        </div>
+                    </div>
+                    <div class="money-item">
+                        <label>
+                            <span>玉</span>
+                            <span class="denomination-badge">¥1</span>
+                        </label>
+                        <div class="input-wrapper">
+                            <button class="btn-control" onclick="adjustMoney('coin1', -1)">−</button>
+                            <input type="number" id="coin1" min="0" value="0">
+                            <button class="btn-control" onclick="adjustMoney('coin1', 1)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="total-display">
+                    <div class="label">所持金合計</div>
+                    <div class="amount">¥<span id="totalAmount">0</span></div>
+                </div>
+            </div>
+
+            <!-- 支払金額入力セクション -->
+            <div class="section">
+                <h2 class="section-title">🛒 支払金額</h2>
+                <div class="payment-input">
+                    <label for="paymentAmount">支払額</label>
+                    <input type="number" id="paymentAmount" min="0" placeholder="金額を入力" inputmode="numeric">
+                </div>
+                <div class="quick-add">
+                    <button class="quick-add-btn" onclick="addToPayment(100)">+100円</button>
+                    <button class="quick-add-btn" onclick="addToPayment(500)">+500円</button>
+                    <button class="quick-add-btn" onclick="addToPayment(1000)">+1000円</button>
+                    <button class="quick-add-btn" onclick="setPayment(0)">クリア</button>
+                </div>
+                <button class="btn" onclick="calculateOptimalPayment()">💡 最適な支払い方法を計算</button>
+            </div>
+
+            <!-- 結果表示セクション -->
+            <div id="resultSection" class="hidden">
+                <div class="result">
+                    <h3>📊 計算結果</h3>
+                    
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <h4>支払額</h4>
+                            <div class="value"><span id="resultPayment">0</span>円</div>
+                        </div>
+                        <div class="result-item">
+                            <h4>お釣り</h4>
+                            <div class="value"><span id="resultChange">0</span>円</div>
+                        </div>
+                        <div class="result-item">
+                            <h4>支払い前の小銭</h4>
+                            <div class="value"><span id="coinsBefore">0</span>枚</div>
+                        </div>
+                        <div class="result-item">
+                            <h4>支払い後の小銭</h4>
+                            <div class="value"><span id="coinsAfter">0</span>枚</div>
+                        </div>
+                    </div>
+
+                    <div class="payment-details">
+                        <h4>💳 支払う金額の内訳</h4>
+                        <div class="payment-list" id="paymentBreakdown"></div>
+                    </div>
+
+                    <div class="change-info">
+                        <h4>💴 お釣りの内訳</h4>
+                        <div class="payment-list" id="changeBreakdown"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 金種の定義
+        const denominations = [10000, 5000, 1000, 500, 100, 50, 10, 5, 1];
+        const coinDenominations = [500, 100, 50, 10, 5, 1];
+
+        // +/-ボタンで金額を調整
+        function adjustMoney(id, delta) {
+            const element = document.getElementById(id);
+            const currentValue = parseInt(element.value) || 0;
+            const newValue = Math.max(0, currentValue + delta);
+            element.value = newValue;
+            updateTotal();
+        }
+
+        // 支払金額に追加
+        function addToPayment(amount) {
+            const element = document.getElementById('paymentAmount');
+            const currentValue = parseInt(element.value) || 0;
+            element.value = currentValue + amount;
+        }
+
+        // 支払金額をセット
+        function setPayment(amount) {
+            document.getElementById('paymentAmount').value = amount;
+        }
+
+        // LocalStorageから所持金を読み込む
+        function loadMoney() {
+            const savedMoney = localStorage.getItem('currentMoney');
+            if (savedMoney) {
+                const money = JSON.parse(savedMoney);
+                denominations.forEach(denom => {
+                    const element = document.getElementById(getInputId(denom));
+                    element.value = money[denom] || 0;
+                });
+            }
+        }
+
+        // LocalStorageに所持金を保存
+        function saveMoney() {
+            const money = getCurrentMoney();
+            localStorage.setItem('currentMoney', JSON.stringify(money));
+        }
+
+        // 所持金の合計を計算して表示
+        function updateTotal() {
+            let total = 0;
+            denominations.forEach(denom => {
+                const element = document.getElementById(getInputId(denom));
+                const count = parseInt(element.value) || 0;
+                total += denom * count;
+            });
+            document.getElementById('totalAmount').textContent = total.toLocaleString();
+            saveMoney(); // 変更時に保存
+        }
+
+        // 入力IDを取得
+        function getInputId(denomination) {
+            if (denomination >= 1000) {
+                return `bill${denomination}`;
+            } else {
+                return `coin${denomination}`;
+            }
+        }
+
+        // 現在の所持金を取得
+        function getCurrentMoney() {
+            const money = {};
+            denominations.forEach(denom => {
+                const element = document.getElementById(getInputId(denom));
+                money[denom] = parseInt(element.value) || 0;
+            });
+            return money;
+        }
+
+        // 小銭の枚数を計算
+        function countCoins(money) {
+            let count = 0;
+            coinDenominations.forEach(coin => {
+                count += money[coin] || 0;
+            });
+            return count;
+        }
+
+        // お釣りの構成を計算（標準的な釣銭アルゴリズム）
+        function calculateChange(amount) {
+            const change = {};
+            let remaining = amount;
+            
+            denominations.forEach(denom => {
+                change[denom] = Math.floor(remaining / denom);
+                remaining = remaining % denom;
+            });
+            
+            return change;
+        }
+
+        // 最適な支払い方法を計算
+        function calculateOptimalPayment() {
+            const paymentAmount = parseInt(document.getElementById('paymentAmount').value);
+            
+            if (!paymentAmount || paymentAmount <= 0) {
+                alert('有効な支払金額を入力してください');
+                return;
+            }
+
+            const currentMoney = getCurrentMoney();
+            const totalMoney = denominations.reduce((sum, denom) => sum + denom * currentMoney[denom], 0);
+
+            if (totalMoney < paymentAmount) {
+                alert('所持金が不足しています');
+                return;
+            }
+
+            let bestSolution = null;
+            let bestCoinsAfter = Infinity;
+
+            // 支払い可能な金額の範囲を探索（支払額から最大でお釣りが少なくなる範囲）
+            const maxPayment = Math.min(totalMoney, paymentAmount + 999);
+            
+            for (let payAmount = paymentAmount; payAmount <= maxPayment; payAmount++) {
+                const payment = getPaymentCombination(currentMoney, payAmount);
+                
+                if (payment) {
+                    const changeAmount = payAmount - paymentAmount;
+                    const changeBreakdown = calculateChange(changeAmount);
+                    
+                    // 支払い後の所持金を計算
+                    const afterMoney = { ...currentMoney };
+                    
+                    // 支払った分を減らす
+                    denominations.forEach(denom => {
+                        afterMoney[denom] -= payment[denom];
+                    });
+                    
+                    // お釣りを追加
+                    denominations.forEach(denom => {
+                        afterMoney[denom] += changeBreakdown[denom];
+                    });
+                    
+                    // 支払い後の小銭枚数を計算
+                    const coinsAfter = countCoins(afterMoney);
+                    
+                    if (coinsAfter < bestCoinsAfter) {
+                        bestCoinsAfter = coinsAfter;
+                        bestSolution = {
+                            payment: payment,
+                            payAmount: payAmount,
+                            change: changeBreakdown,
+                            changeAmount: changeAmount,
+                            afterMoney: afterMoney
+                        };
+                    }
+                }
+            }
+
+            if (bestSolution) {
+                displayResult(paymentAmount, bestSolution, currentMoney);
+                // 支払い後の所持金を反映
+                updateMoneyAfterPayment(bestSolution.afterMoney);
+            } else {
+                alert('最適な支払い方法が見つかりませんでした');
+            }
+        }
+
+        // 支払い後の所持金を入力フィールドに反映
+        function updateMoneyAfterPayment(afterMoney) {
+            denominations.forEach(denom => {
+                const element = document.getElementById(getInputId(denom));
+                element.value = afterMoney[denom];
+            });
+            updateTotal(); // 合計を更新
+        }
+
+        // 指定金額を支払うための組み合わせを取得（貪欲法）
+        function getPaymentCombination(money, amount) {
+            const payment = {};
+            let remaining = amount;
+            const availableMoney = { ...money };
+
+            for (let denom of denominations) {
+                payment[denom] = 0;
+                
+                while (remaining >= denom && availableMoney[denom] > 0) {
+                    payment[denom]++;
+                    availableMoney[denom]--;
+                    remaining -= denom;
+                }
+            }
+
+            // 正確に支払えない場合はnullを返す
+            if (remaining > 0) {
+                return null;
+            }
+
+            return payment;
+        }
+
+        // 結果を表示
+        function displayResult(paymentAmount, solution, beforeMoney) {
+            const coinsBefore = countCoins(beforeMoney);
+            const coinsAfter = countCoins(solution.afterMoney);
+
+            document.getElementById('resultPayment').textContent = solution.payAmount.toLocaleString();
+            document.getElementById('resultChange').textContent = solution.changeAmount.toLocaleString();
+            document.getElementById('coinsBefore').textContent = coinsBefore;
+            document.getElementById('coinsAfter').textContent = coinsAfter;
+
+            // 支払い内訳を表示
+            const paymentBreakdown = document.getElementById('paymentBreakdown');
+            paymentBreakdown.innerHTML = '';
+            denominations.forEach(denom => {
+                if (solution.payment[denom] > 0) {
+                    const item = document.createElement('div');
+                    item.className = 'payment-list-item';
+                    item.innerHTML = `
+                        <div class="denomination">${denom.toLocaleString()}円</div>
+                        <div class="count">×${solution.payment[denom]}</div>
+                    `;
+                    paymentBreakdown.appendChild(item);
+                }
+            });
+
+            // お釣り内訳を表示
+            const changeBreakdown = document.getElementById('changeBreakdown');
+            changeBreakdown.innerHTML = '';
+            if (solution.changeAmount === 0) {
+                changeBreakdown.innerHTML = '<div class="payment-list-item" style="grid-column: 1/-1;"><div class="count" style="font-size: 14px;">お釣りなし（ちょうど）</div></div>';
+            } else {
+                denominations.forEach(denom => {
+                    if (solution.change[denom] > 0) {
+                        const item = document.createElement('div');
+                        item.className = 'payment-list-item';
+                        item.innerHTML = `
+                            <div class="denomination">${denom.toLocaleString()}円</div>
+                            <div class="count">×${solution.change[denom]}</div>
+                        `;
+                        changeBreakdown.appendChild(item);
+                    }
+                });
+            }
+
+            // 結果セクションを表示
+            document.getElementById('resultSection').classList.remove('hidden');
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 入力フィールドの変更時に合計を更新
+        denominations.forEach(denom => {
+            const element = document.getElementById(getInputId(denom));
+            element.addEventListener('input', updateTotal);
+        });
+
+        // 初期表示
+        loadMoney(); // 保存された所持金を読み込み
+        updateTotal();
+    </script>
+</body>
+</html>
